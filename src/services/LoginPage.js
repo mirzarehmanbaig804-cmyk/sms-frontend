@@ -5,43 +5,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
+    setError("");
 
     try {
-      const response = await authAPI.login({ email, password });
-      const data = response.data;
+      const res = await authAPI.login({ email, password });
+      const token = res.data.token;
+      const user = res.data.user;
 
-      const token =
-        data?.token ||
-        data?.data?.token ||
-        data?.accessToken ||
-        data?.access_token ||
-        null;
+      localStorage.setItem("sms_token", token);
+      localStorage.setItem("sms_user", JSON.stringify(user));
 
-      const user =
-        data?.user ||
-        data?.data?.user ||
-        null;
-
-      if (token) {
-        localStorage.setItem("sms_token", token);
-        if (user) localStorage.setItem("sms_user", JSON.stringify(user));
-        setMessage({ type: "success", text: "Login successful! Redirecting..." });
-        setTimeout(() => { window.location.href = "/dashboard"; }, 1000);
-      } else {
-        setMessage({ type: "error", text: "Login failed. Token not received." });
-      }
+      window.location.href = "/dashboard";
     } catch (err) {
-      const errText =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Login failed. Please check your credentials.";
-      setMessage({ type: "error", text: errText });
+      setError(
+        err?.response?.data?.message || "Login failed. Check credentials."
+      );
     } finally {
       setLoading(false);
     }
@@ -54,15 +37,8 @@ export default function LoginPage() {
         <h2 style={styles.title}>SMS Marketing</h2>
         <p style={styles.subtitle}>Sign in to your account</p>
 
-        {message && (
-          <div style={{
-            ...styles.banner,
-            background: message.type === "success" ? "#d1fae5" : "#fee2e2",
-            color: message.type === "success" ? "#065f46" : "#991b1b",
-            border: `1px solid ${message.type === "success" ? "#6ee7b7" : "#fca5a5"}`,
-          }}>
-            {message.type === "success" ? "✅" : "❌"} {message.text}
-          </div>
+        {error && (
+          <div style={styles.errorBox}>❌ {error}</div>
         )}
 
         <form onSubmit={handleLogin}>
@@ -113,7 +89,10 @@ const styles = {
   logoBox: { fontSize: 36, textAlign: "center", marginBottom: 8 },
   title: { textAlign: "center", fontSize: 24, fontWeight: 700, color: "#1e3a8a", margin: "0 0 4px" },
   subtitle: { textAlign: "center", color: "#6b7280", marginBottom: 24, fontSize: 14 },
-  banner: { padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 14, fontWeight: 500 },
+  errorBox: {
+    background: "#fee2e2", color: "#991b1b", border: "1px solid #fca5a5",
+    padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 14,
+  },
   label: { display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 },
   input: {
     width: "100%", padding: "12px 14px", border: "1px solid #d1d5db",
